@@ -39,7 +39,7 @@ var server = restify.createServer();
 //create bot
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
-server.post('/api/messages', bot.verifyBotFramework(), bot.listen());
+//server.post('/api/messages', bot.verifyBotFramework(), bot.listen());
 
 // Serve a static web page
 server.get(/.*/, restify.serveStatic({
