@@ -1,13 +1,15 @@
 var restify = require('restify');
 var builder = require('botbuilder');
-//var builder = require('core');
+var storage = require('azure-storage');
 
-// Get secrets from server environment
-/*var botConnectorOptions = { 
-    appId: process.env.BOTFRAMEWORK_APPID, 
-    appSecret: process.env.BOTFRAMEWORK_APPSECRET
- 
-};*/
+var blobSvc = storage.createBlobService("storagefordemodfsrram", "RUTukQbuykqb1LS1+3Az4rubAbuS/gY1N8b3nNvKg+HPdSW0TZtbk6PvCOyvQqNj8SOJvAYv7f/T+5icX+5/nQ==");
+/*
+blobSvc.createAppendBlobFromLocalFile('chatbot', 'appendblob', 'appendblob.txt', function(error, result, response){
+  if(!error){
+    console.log("file uploaded");
+  }
+});
+*/
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -16,46 +18,109 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 });
   
 // Create chat bot
-
 var connector = new builder.ChatConnector({
     appId: process.env.MICROSOFT_APP_ID,
     appPassword: process.env.MICROSOFT_APP_PASSWORD
 });
 
-/*
-// Create bot
-var bot = new builder.BotConnectorBot(botConnectorOptions);
-bot.add('/', function (session) {
-    
-    //respond with user's message
-    session.send("You said " + session.message.text);
-});
-
-// Setup Restify Server
-var server = restify.createServer();
-*/
-
-// Handle Bot Framework messages
-
 //create bot
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
-//server.post('/api/messages', bot.verifyBotFramework(), bot.listen());
 
-// Serve a static web page
+//Serve a static web page
 server.get(/.*/, restify.serveStatic({
 	'directory': '.',
 	'default': 'index.html'
 }));
 
+bot.dialog('/', [
+    function (session) {
+        session.beginDialog('/myservice',session.userData.profile);
+    },
+    function (session, results) {
+        session.userData.profile = results.response;
+        
+        session.userData.profile.loggedttm = getDateTime();
+        var myjson = JSON.stringify(session.userData.profile);
 
-bot.dialog('/', function (session) {
-    //session.send("Hello Sree" + session.message.text);
+        session.send('Thank you logged your input %s !!!',myjson);
+        
+        blobSvc.appendFromText('chatbot', 'appendblob', myjson, function(error, result, response){
+            if(!error){
+                        console.log("Text is appended");
+                }
+        });
 
-    session.send("Hello Sree");
-});
-/*
-server.listen(process.env.port || 3978, function () {
-    console.log('%s listening to %s', server.name, server.url); 
-});
-*/
+        session.endConversation("Ok… Goodbye.");
+    }
+]);
+
+
+bot.dialog('/myservice', [
+    function (session,args,next) {
+    session.dialogData.profile = args || {};
+            if (!session.dialogData.profile.greeting) {
+                    builder.Prompts.text(session, 'Hi I am Scarlet !!! How is your day so far?');
+            } else {
+                    next();
+            }
+
+    },
+    function (session,results,next) {
+
+            if (results.response) {
+            session.dialogData.profile.greeting = results.response;
+            }
+
+            if (!session.dialogData.profile.service) {
+            builder.Prompts.choice(session, "How is my service today ?", "Bad|Good|Excellent");
+            } else {
+                 next();
+            }
+   
+    },
+    function(session,results,next) {
+
+            if (results.response) {
+                session.dialogData.profile.service = results.response;
+            }
+
+            if (!session.dialogData.profile.trainer) {
+            builder.Prompts.text(session, 'who is your favorite trainer?');
+            } else {
+            next();
+            }
+    },
+    function(session,results) {
+            if (results.response) {
+            session.dialogData.profile.trainer = results.response;
+            }
+            session.endDialogWithResult({ response: session.dialogData.profile });
+    }
+]);
+
+function getDateTime() {
+
+    var date = new Date();
+
+    var hour = date.getHours();
+    hour = (hour < 10 ? "0" : "") + hour;
+
+    var min  = date.getMinutes();
+    min = (min < 10 ? "0" : "") + min;
+
+    var sec  = date.getSeconds();
+    sec = (sec < 10 ? "0" : "") + sec;
+
+    var year = date.getFullYear();
+
+    var month = date.getMonth() + 1;
+    month = (month < 10 ? "0" : "") + month;
+
+    var day  = date.getDate();
+    day = (day < 10 ? "0" : "") + day;
+
+    return year + ":" + month + ":" + day + ":" + hour + ":" + min + ":" + sec;
+
+}
+
