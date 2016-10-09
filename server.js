@@ -33,7 +33,10 @@ server.get(/.*/, restify.serveStatic({
 	'default': 'index.html'
 }));
 
-bot.dialog('/', [
+var intents = new builder.IntentDialog();
+bot.dialog('/', intents);
+
+intents.matches(/^(hi|hello|howdy|how|who|hey)/i, [
     function (session) {
         session.beginDialog('/myservice',session.userData.profile);
     },
@@ -55,11 +58,73 @@ bot.dialog('/', [
     }
 ]);
 
+intents.matches(/^.*(help).*$/i, [
+    function (session) {
+
+         builder.Prompts.choice(session, "Hi I am Scarlet !!! I can help you with the following?","service|billing");
+
+    },
+    function (session,results) {
+
+        if(results.response.entity === 'service') {
+             session.beginDialog('/myservice',session.userData.profile);
+
+         } else {
+
+             session.send("Please contact billing department @1-800-myhouse");
+             session.endConversation("Ok… Goodbye.");
+         }
+    },
+    function (session, results) {
+
+        session.userData.profile = results.response;
+        
+        session.userData.profile.loggedttm = getDateTime();
+        var myjson = JSON.stringify(session.userData.profile);
+
+        session.send('Thank you logged your input %s !!!',myjson);
+        
+        blobSvc.appendFromText('chatbot', 'userresponses.txt', myjson.concat("\n"), function(error, result, response){
+            if(!error){
+                        console.log("Text is appended");
+                }
+        });
+
+        session.endConversation("Ok… Goodbye.");
+    }
+
+]);
+
+
+/*
+bot.dialog('/', [
+    function (session) {
+        session.beginDialog('/myservice',session.userData.profile);
+    },
+    function (session, results) {
+        session.userData.profile = results.response;
+        
+        session.userData.profile.loggedttm = getDateTime();
+        var myjson = JSON.stringify(session.userData.profile);
+
+        session.send('Thank you logged your input %s !!!',myjson);
+        
+        blobSvc.appendFromText('chatbot', 'userresponses.txt', myjson.concat("\n"), function(error, result, response){
+            if(!error){
+                        console.log("Text is appended");
+                }
+        });
+
+        session.endConversation("Ok… Goodbye.");
+    }
+]);
+*/
+
 bot.dialog('/myservice', [
     function (session,args,next) {
     session.dialogData.profile = args || {};
             if (!session.dialogData.profile.greeting) {
-                    builder.Prompts.text(session, 'Hi I am Scarlet !!! How is your day so far?');
+                    builder.Prompts.text(session, 'From Scarlet with Love : How is your day so far?');
                     
                     
             } else {
@@ -73,13 +138,13 @@ bot.dialog('/myservice', [
                 if(results.response.indexOf ('bad') > -1 | results.response.indexOf ('tir') > -1 | results.response.indexOf ('stress') > -1 ) {
                     session.send("sorry to hear!!!");
                 } else {
-                    session.send("Great Thankyou !!!");
+                    session.send("My day cannot be better than yours dear!!!");
             }
             session.dialogData.profile.greeting = results.response;
             }
 
             if (!session.dialogData.profile.service) {
-            builder.Prompts.choice(session, "How is my service today ?", "Bad|Good|Excellent");
+            builder.Prompts.choice(session, "How did we treat you at facility today ?", "Worse|Bad|Good|Excellent");
             } else {
                  next();
             }
