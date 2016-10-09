@@ -3,8 +3,8 @@ var builder = require('botbuilder');
 var storage = require('azure-storage');
 
 var blobSvc = storage.createBlobService("storagefordemodfsrram", "RUTukQbuykqb1LS1+3Az4rubAbuS/gY1N8b3nNvKg+HPdSW0TZtbk6PvCOyvQqNj8SOJvAYv7f/T+5icX+5/nQ==");
-/*
-blobSvc.createAppendBlobFromLocalFile('chatbot', 'appendblob', 'appendblob.txt', function(error, result, response){
+
+/*blobSvc.createAppendBlobFromLocalFile('chatbot', 'userresponses.txt', 'appendblob.txt', function(error, result, response){
   if(!error){
     console.log("file uploaded");
   }
@@ -45,7 +45,7 @@ bot.dialog('/', [
 
         session.send('Thank you logged your input %s !!!',myjson);
         
-        blobSvc.appendFromText('chatbot', 'appendblob', myjson, function(error, result, response){
+        blobSvc.appendFromText('chatbot', 'userresponses.txt', myjson.concat("\n"), function(error, result, response){
             if(!error){
                         console.log("Text is appended");
                 }
@@ -55,12 +55,13 @@ bot.dialog('/', [
     }
 ]);
 
-
 bot.dialog('/myservice', [
     function (session,args,next) {
     session.dialogData.profile = args || {};
             if (!session.dialogData.profile.greeting) {
                     builder.Prompts.text(session, 'Hi I am Scarlet !!! How is your day so far?');
+                    
+                    
             } else {
                     next();
             }
@@ -69,6 +70,11 @@ bot.dialog('/myservice', [
     function (session,results,next) {
 
             if (results.response) {
+                if(results.response.indexOf ('bad') > -1 | results.response.indexOf ('tir') > -1 | results.response.indexOf ('stress') > -1 ) {
+                    session.send("sorry to hear!!!");
+                } else {
+                    session.send("Great Thankyou !!!");
+            }
             session.dialogData.profile.greeting = results.response;
             }
 
