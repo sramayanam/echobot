@@ -33,8 +33,28 @@ server.get(/.*/, restify.serveStatic({
 	'default': 'index.html'
 }));
 
-var intents = new builder.IntentDialog();
+var recognizer = new builder.LuisRecognizer('https://api.projectoxford.ai/luis/v1/application?id=5049bb53-d42e-4d49-b9d4-63753741d13f&subscription-key=ce6ada59f1ac45a7bcc52ce955fe2db2');
+var intents = new builder.IntentDialog({ recognizers: [recognizer] });
+
+//var intents = new builder.IntentDialog();
 bot.dialog('/', intents);
+
+intents.matches('chooseactivity', [
+function (session,results) {
+
+             session.send("I see you are looking for some tips");
+             if (!results.entities[0] | !results) {
+
+                 session.endConversation("Here is a tip dear !!! Take a Massage");
+
+             } else {
+                session.endConversation("Here is a tip dear !!! do some :: %s", results.entities[0].type);
+             }
+            // session.endConversation("Here are sometips :: %s", JSON.stringify(results));
+             
+}
+
+]);
 
 intents.matches(/^(hi|hello|howdy|how|who|hey)/i, [
     function (session) {
