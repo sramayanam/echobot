@@ -45,9 +45,15 @@ function (session,results) {
              session.send("I see you are looking for some tips");
              if (!results.entities[0] | !results) {
 
-                 session.endConversation("Here is a tip dear !!! Take a Massage");
+                    var pic1 = new builder.Message(session).attachments([{
+                             contentType: "image/jpeg",
+                             contentUrl: "http://storagefordemodfsrram.blob.core.windows.net/content/img1.jpg"
+                     }]);
+                    session.send("Here is a tip dear !!! Take a Massage");
+                    session.endConversation(pic1);
 
              } else {
+                 
                 session.endConversation("Here is a tip dear !!! do some :: %s", results.entities[0].type);
              }
             // session.endConversation("Here are sometips :: %s", JSON.stringify(results));
