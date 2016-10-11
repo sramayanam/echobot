@@ -38,12 +38,18 @@ var intents = new builder.IntentDialog({ recognizers: [recognizer] });
 
 //var intents = new builder.IntentDialog();
 bot.dialog('/', intents);
-
+//bot.dialog('/chataboutanactivity',intents);
+/*bot.dialog('/', new builder.IntentDialog()
+    .matches(/^add/i, '/addTask')
+    .matches(/^change/i, '/changeTask')
+    .matches(/^delete/i, '/deleteTask')
+    .onDefault(builder.DialogAction.send("I'm sorry. I didn't understand."))
+);*/
 intents.matches('chooseactivity', [
 function (session,results) {
 
-             session.send("I see you are looking for some tips");
-             if (!results.entities[0] | !results) {
+//            session.send("Here are sometips :: %s", JSON.stringify(results));
+            if (!results.entities[0] | !results) {
 
                     var pic1 = new builder.Message(session).attachments([{
                              contentType: "image/jpeg",
@@ -53,53 +59,47 @@ function (session,results) {
                     session.endConversation(pic1);
 
              } else {
-                 
-                session.endConversation("Here is a tip dear !!! do some :: %s", results.entities[0].type);
+
+             var k = results.entities[0].type;
+
+             if(k.indexOf("builtin") === 0) {
+
+                session.endConversation("You silly I am fitness bot you are asking for ::: %s", k.substring(k.lastIndexOf(".")+1,k.length));
+                
+                
+             } else {
+                 session.endConversation("Here is a tip dear !!! do some :: %s", results.entities[0].type);
              }
-            // session.endConversation("Here are sometips :: %s", JSON.stringify(results));
+            
              
+        }
 }
-
 ]);
 
-intents.matches(/^(hi|hello|howdy|how|who|hey)/i, [
+intents.matches(/^(hi|hello|howdy|how|who|hey|whats|help|what else).*$/i, [
     function (session) {
-        session.beginDialog('/myservice',session.userData.profile);
-    },
-    function (session, results) {
-        session.userData.profile = results.response;
-        
-        session.userData.profile.loggedttm = getDateTime();
-        var myjson = JSON.stringify(session.userData.profile);
-
-        session.send('Thank you logged your input %s !!!',myjson);
-        
-        blobSvc.appendFromText('chatbot', 'userresponses.txt', myjson.concat("\n"), function(error, result, response){
-            if(!error){
-                        console.log("Text is appended");
-                }
-        });
-
-        session.endConversation("Ok… Goodbye.");
-    }
-]);
-
-intents.matches(/^.*(help).*$/i, [
-    function (session) {
-
-         builder.Prompts.choice(session, "Hi I am Scarlet !!! I can help you with the following?","service|billing");
+         session.send("Hello Dear !!! I am Scarlet your fitness friend");
+         builder.Prompts.choice(session, "I can help you with the following?","Ask me Fitnesstip|Feedback|billing");
 
     },
     function (session,results) {
 
-        if(results.response.entity === 'service') {
-             session.beginDialog('/myservice',session.userData.profile);
-
-         } else {
-
-             session.send("Please contact billing department @1-800-myhouse");
-             session.endConversation("Ok… Goodbye.");
-         }
+        switch (results.response.entity) {
+            case "Feedback":
+                session.beginDialog('/feedback',session.userData.profile);
+                break;
+            case "billing":
+                session.send("Please contact billing department @1-800-myhouse");
+                session.endConversation("Ok… Goodbye.");
+                break;
+           case "Ask me Fitnesstip":
+                session.replaceDialog("/");
+                break;
+            default:
+                session.endConversation(" Bye Sweet heart");
+                //session.beginDialog('/feedback',session.userData.profile);
+                break;
+            }
     },
     function (session, results) {
 
@@ -122,35 +122,13 @@ intents.matches(/^.*(help).*$/i, [
 ]);
 
 
-/*
-bot.dialog('/', [
-    function (session) {
-        session.beginDialog('/myservice',session.userData.profile);
-    },
-    function (session, results) {
-        session.userData.profile = results.response;
-        
-        session.userData.profile.loggedttm = getDateTime();
-        var myjson = JSON.stringify(session.userData.profile);
-
-        session.send('Thank you logged your input %s !!!',myjson);
-        
-        blobSvc.appendFromText('chatbot', 'userresponses.txt', myjson.concat("\n"), function(error, result, response){
-            if(!error){
-                        console.log("Text is appended");
-                }
-        });
-
-        session.endConversation("Ok… Goodbye.");
-    }
-]);
-*/
-
-bot.dialog('/myservice', [
+bot.dialog('/feedback', [
     function (session,args,next) {
     session.dialogData.profile = args || {};
             if (!session.dialogData.profile.greeting) {
-                    builder.Prompts.text(session, 'From Scarlet with Love : How is your day so far?');
+                   
+                    session.send("You look amazing today !!! I can see the fitness results already");
+                    builder.Prompts.text(session, 'How is your day so far?');
                     
                     
             } else {
@@ -161,7 +139,7 @@ bot.dialog('/myservice', [
     function (session,results,next) {
 
             if (results.response) {
-                if(results.response.indexOf ('bad') > -1 | results.response.indexOf ('tir') > -1 | results.response.indexOf ('stress') > -1 ) {
+                if(results.response.indexOf ('bad') > -1 | results.response.indexOf ('tir') > -1 | results.response.indexOf ('stress') > -1 | results.response.indexOf ('wors') > -1) {
                     session.send("sorry to hear!!!");
                 } else {
                     session.send("My day cannot be better than yours dear!!!");
@@ -188,13 +166,27 @@ bot.dialog('/myservice', [
             next();
             }
     },
+    function(session,results,next) {
+
+            if (results.response) {
+                session.dialogData.profile.trainer = results.response;
+            }
+
+            if (!session.dialogData.profile.tfeedback) {
+            builder.Prompts.text(session, 'I love to hear of what we could do better!!! Please share your feedback');
+            } else {
+            next();
+            }
+    },
     function(session,results) {
             if (results.response) {
-            session.dialogData.profile.trainer = results.response;
+            session.dialogData.profile.tfeedback = results.response;
             }
             session.endDialogWithResult({ response: session.dialogData.profile });
     }
 ]);
+
+intents.onDefault(builder.DialogAction.send("I'm sorry. I didn't understand."));
 
 function getDateTime() {
 
