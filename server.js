@@ -82,7 +82,7 @@ intents.matches(/^(hi|hello|howdy|how|who|hey|whats|help|what else).*$/i, [
          builder.Prompts.choice(session, "I can help you with the following?","Ask me Fitnesstip|Feedback|billing");
 
     },
-    function (session,results) {
+    function (session,results,next) {
 
         switch (results.response.entity) {
             case "Feedback":
@@ -100,6 +100,7 @@ intents.matches(/^(hi|hello|howdy|how|who|hey|whats|help|what else).*$/i, [
                 //session.beginDialog('/feedback',session.userData.profile);
                 break;
             }
+          //  next();
     },
     function (session, results) {
 
@@ -127,8 +128,8 @@ bot.dialog('/feedback', [
     session.dialogData.profile = args || {};
             if (!session.dialogData.profile.greeting) {
                    
-                    session.send("You look amazing today !!! I can see the fitness results already");
-                    builder.Prompts.text(session, 'How is your day so far?');
+                    //session.send("You look amazing today !!! I can see the fitness results already");
+                    builder.Prompts.text(session, 'You look amazing today !!! How is your day so far?');
                     
                     
             } else {
