@@ -124,15 +124,16 @@ connection.on('connect', function (err) {
     ]);
 
     intents.matches(/^(hi|hello|howdy|how|who|hey|whats|help|what else).*$/i, [
-        function (session) {
+        function (session) { 
+               
             session.send("Hello Dear !!! I am Scarlet your fitness friend");
             builder.Prompts.choice(session, "I can help you with the following?", "Ask me Fitnesstip|Feedback|billing");
 
         },
         function (session, results, next) {
-
+               
             switch (results.response.entity) {
-                case "Feedback":
+                case "Feedback":   
                     session.beginDialog('/feedback', session.userData.profile);
                     break;
                 case "billing":
@@ -165,8 +166,13 @@ connection.on('connect', function (err) {
                     console.log("Text is appended");
                 }
             });
-
+            session.userData = {};
+            //session.reset();
             session.endConversation("Goodbye.");
+
+            
+
+            
         }
 
     ]);
@@ -174,6 +180,7 @@ connection.on('connect', function (err) {
 
     bot.dialog('/feedback', [
         function (session, args, next) {
+                          
             session.dialogData.profile = args || {};
             if (!session.dialogData.profile.greeting) {
 
@@ -233,6 +240,7 @@ connection.on('connect', function (err) {
                 session.dialogData.profile.tfeedback = results.response;
             }
             session.endDialogWithResult({ response: session.dialogData.profile });
+ 
         }
     ]);
 
