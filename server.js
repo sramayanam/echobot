@@ -1,13 +1,20 @@
 var restify = require('restify');
 var builder = require('botbuilder');
 var storage = require('azure-storage');
-
+var request = require('request');
+var uuid = require('node-uuid');
+var documentClient = require("documentdb").DocumentClient;
 var Connection = require('tedious').Connection;
 var config = {
     userName: 'srramadmin',
     password: 'Lz8oq1dn',
     server: 'srramsql.database.windows.net',
-    options: { encrypt: true, database: 'DWR', rowCollectionOnDone: true, rowCollectionOnRequestCompletion: true }
+    options: {
+        encrypt: true,
+        database: 'DWR',
+        rowCollectionOnDone: true,
+        rowCollectionOnRequestCompletion: true
+    }
 };
 var connection = new Connection(config);
 connection.on('connect', function (err) {
@@ -45,7 +52,9 @@ connection.on('connect', function (err) {
     }));
 
     var recognizer = new builder.LuisRecognizer('https://api.projectoxford.ai/luis/v1/application?id=5049bb53-d42e-4d49-b9d4-63753741d13f&subscription-key=ce6ada59f1ac45a7bcc52ce955fe2db2');
-    var intents = new builder.IntentDialog({ recognizers: [recognizer] });
+    var intents = new builder.IntentDialog({
+        recognizers: [recognizer]
+    });
 
     //var intents = new builder.IntentDialog();
     bot.dialog('/', intents);
@@ -124,16 +133,36 @@ connection.on('connect', function (err) {
     ]);
 
     intents.matches(/^(hi|hello|howdy|how|who|hey|whats|help|what else).*$/i, [
-        function (session) { 
-               
+        function (session) {
+
             session.send("Hello Dear !!! I am Scarlet your fitness friend");
+            var dt = new Date();
+            var gtngtm = dt.getHours().toString() + dt.getMinutes().toString();
+            //console.log(parseInt(gtngtm));
+            switch (true) {
+                case (parseInt(gtngtm) > 0 && parseInt(gtngtm) <= 1159):
+                    session.send("Good Morning !");
+                    break;
+                case (parseInt(gtngtm) > 1159 && parseInt(gtngtm) <= 1700):
+                    session.send("Good Afternoon !");
+                    break;
+                case (parseInt(gtngtm) > 1700 && parseInt(gtngtm) <= 1900):
+                    session.send("Good Evening !");
+                    break;
+                case (parseInt(gtngtm) > 1900 && parseInt(gtngtm) <= 2359):
+                    session.send("Good Night !");
+                    break;
+                default:
+                    session.send("Good Mars Day !");
+                    break;
+            }
             builder.Prompts.choice(session, "I can help you with the following?", "Ask me Fitnesstip|Feedback|billing");
 
         },
         function (session, results, next) {
-               
+
             switch (results.response.entity) {
-                case "Feedback":   
+                case "Feedback":
                     session.beginDialog('/feedback', session.userData.profile);
                     break;
                 case "billing":
@@ -156,23 +185,67 @@ connection.on('connect', function (err) {
 
             session.userData.profile.loggedttm = getDateTime();
             var myjson = JSON.stringify(session.userData.profile);
+            var uuid1 = uuid.v1();
+            var parsedjson = JSON.parse(myjson);
+            var str = '{ "documents": [ {"language": "en", "id": "' + uuid1 + '"' + ',"text": ' + '"' + parsedjson.service.entity + " " + parsedjson.tfeedback + '"' + '}]}';
+            var postData = JSON.parse(str);
 
-            // session.send('Thank you logged your input %s !!!',myjson);
-
-            session.send('Thank you Very much !!! Logged your Input');
-
-            blobSvc.appendFromText('chatbot', 'userresponses.txt', myjson.concat("\n"), function (error, result, response) {
-                if (!error) {
-                    console.log("Text is appended");
+            var options = {
+                method: 'post',
+                body: postData,
+                json: true,
+                url: "https://westus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "Ocp-Apim-Subscription-Key": "be6afe2e9d6d4a18acd975e7b55b1d17"
                 }
+            };
+
+
+            request(options, function (err, res, body) {
+                if (err) {
+                    console.log('Error :', err);
+
+                }
+                var sumscore = 0;
+                for (i = 0; i < res.body.documents.length; i++) {
+                    console.log(' Response ::::::', JSON.stringify(res.body.documents[i].score));
+                    sumscore += res.body.documents[i].score;
+                }
+                finalscore = sumscore / res.body.documents.length;
+                console.log('Printing final score from batch  :::::: ', finalscore);
+                parsedjson.sentiment = finalscore;
+                myjson1 = JSON.stringify(parsedjson);
+                // session.send('Thank you Very much !!! Logged your Input');
+                session.send('Thank you logged your input %s !!!', myjson1);
+
+                blobSvc.appendFromText('chatbot', 'userresponses1.txt', myjson1.concat("\n"), function (error, result, response) {
+                    if (!error) {
+                        console.log("Text is appended");
+                    }
+                });
+
+                var documentDefinition = '{ "id": "' + uuid1 + '","content": ' + JSON.stringify(parsedjson) + ' }';
+                console.log("printing document definition :::", documentDefinition);
+                var host = "https://srram.documents.azure.com:443/";
+                var masterKey = "QzVNdYOMWHAbMSXO62tB2lEifiuNnonSNTGX93sSU1RhEqJaRYPwsPcllpBEIPdn4tFIL1O2QL9wRYrI5jppVQ==";
+                var client = new documentClient(host, { masterKey: masterKey });
+                var collectionUrl = "dbs/srrampoc/colls/scarletdata";
+                client.createDocument(collectionUrl, JSON.parse(documentDefinition), function (err) {
+                    if (err) { console.log("In error :::: ", JSON.stringify(err) + JSON.stringify(parsedjson)); }
+                    console.log("Doc is created !!!! in document db");
+                });
+
             });
+
             session.userData = {};
             //session.reset();
             session.endConversation("Goodbye.");
 
-            
 
-            
+
+
         }
 
     ]);
@@ -180,7 +253,7 @@ connection.on('connect', function (err) {
 
     bot.dialog('/feedback', [
         function (session, args, next) {
-                          
+
             session.dialogData.profile = args || {};
             if (!session.dialogData.profile.greeting) {
 
@@ -239,8 +312,10 @@ connection.on('connect', function (err) {
             if (results.response) {
                 session.dialogData.profile.tfeedback = results.response;
             }
-            session.endDialogWithResult({ response: session.dialogData.profile });
- 
+            session.endDialogWithResult({
+                response: session.dialogData.profile
+            });
+
         }
     ]);
 
@@ -304,8 +379,7 @@ connection.on('connect', function (err) {
 
                             result += "\"" + fr[j].metadata.colName + "\"" + ":" + "\"" + fr[j].value + "\"";
 
-                        }
-                        else {
+                        } else {
 
                             result += "\"" + fr[j].metadata.colName + "\"" + ":" + "\"" + fr[j].value + "\"" + ",";
                         }
@@ -332,5 +406,3 @@ connection.on('connect', function (err) {
         connection.execSql(request);
     }
 });
-
-
