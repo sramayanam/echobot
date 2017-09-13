@@ -16,6 +16,8 @@ var config = {
         rowCollectionOnRequestCompletion: true
     }
 };
+// Setup Restify Server
+var server = restify.createServer();
 var connection = new Connection(config);
 connection.on('connect', function (err) {
     console.log("Connected");
@@ -29,11 +31,8 @@ connection.on('connect', function (err) {
     });
     */
 
-    // Setup Restify Server
-    var server = restify.createServer();
-    server.listen(process.env.port || process.env.PORT || 3978, function () {
-        console.log('%s listening to %s', server.name, server.url);
-    });
+ 
+    
 
     // Create chat bot
     var connector = new builder.ChatConnector({
@@ -405,4 +404,10 @@ connection.on('connect', function (err) {
         request.addParameter('typ', TYPES.VarChar, acttyp);
         connection.execSql(request);
     }
+
+
 });
+
+module.exports = server;
+
+

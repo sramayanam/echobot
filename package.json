@@ -4,7 +4,7 @@
   "description": "A sample bot for getting started with Bot Framework",
   "main": "server.js",
   "scripts": {
-    "test": ""
+    "start": "node ./bin/www"
   },
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
   "keywords": [
     "botframework"
   ],
-  "author": "Fuse Labs",
+  "author": "Sree Ram",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/fuselabs/echobot/issues"
