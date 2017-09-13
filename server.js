@@ -19,7 +19,8 @@ var config = {
 // Setup Restify Server
 var server = restify.createServer();
 var connection = new Connection(config);
-connection.on('connect', function (err) {
+module.exports.ex = function () {
+    connection.on('connect', function (err) {
     console.log("Connected");
 
     var blobSvc = storage.createBlobService("storagefordemodfsrram", "RUTukQbuykqb1LS1+3Az4rubAbuS/gY1N8b3nNvKg+HPdSW0TZtbk6PvCOyvQqNj8SOJvAYv7f/T+5icX+5/nQ==");
@@ -30,10 +31,6 @@ connection.on('connect', function (err) {
       }
     });
     */
-
- 
-    
-
     // Create chat bot
     var connector = new builder.ChatConnector({
         appId: process.env.MICROSOFT_APP_ID,
@@ -405,9 +402,11 @@ connection.on('connect', function (err) {
         connection.execSql(request);
     }
 
-
+    server.listen(process.env.port || process.env.PORT || 3978, function () {
+        console.log('%s listening to %s', server.name, server.url);
+    });
 });
+}
 
-module.exports = server;
 
 
