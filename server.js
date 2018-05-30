@@ -213,8 +213,9 @@ module.exports.ex = function () {
                 console.log('Printing final score from batch  :::::: ', finalscore);
                 parsedjson.sentiment = finalscore;
                 myjson1 = JSON.stringify(parsedjson);
-                // session.send('Thank you Very much !!! Logged your Input');
-                session.send('Thank you logged your input %s !!!', myjson1);
+                session.send('Thank you Very much. I Logged your Input');
+                console.log('Writing following json to blob store: ', myjson1);                
+                // session.send('Thank you logged your input %s !!!', myjson1);
 
                 blobSvc.appendFromText('chatbot', 'userresponses1.txt', myjson1.concat("\n"), function (error, result, response) {
                     if (!error) {
@@ -238,10 +239,6 @@ module.exports.ex = function () {
             session.userData = {};
             //session.reset();
             session.endConversation("Goodbye.");
-
-
-
-
         }
 
     ]);
